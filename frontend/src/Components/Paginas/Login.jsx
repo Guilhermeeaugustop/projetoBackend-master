@@ -2,41 +2,51 @@ import { useState } from "react";
 import { FaUser, FaLock } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import "./Login.css";
+import { setAuth } from "../../auth/authStorage"; // ajuste o caminho se seu arquivo estiver em outro lugar
 
-const Login = () => {
+const API_BASE = (import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000").replace(/\/$/, "");
+const API_LOGIN_URL = `${API_BASE}/login/`;
+
+export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
-  const API_LOGIN_URL = "http://127.0.0.1:8000/login/";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
-    if (email.trim() === "" || password.trim() === "") {
+    if (!email.trim() || !password.trim()) {
       setError("Por favor, preencha o email e a senha.");
       return;
     }
 
     try {
-      const response = await fetch(API_LOGIN_URL, {
+      setLoading(true);
+      const resp = await fetch(API_LOGIN_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
+        // Se futuramente usar sessão do Django (login(request, user)):
+        // credentials: "include",
       });
 
-      const data = await response.json();
+      const data = await resp.json().catch(() => ({}));
 
-      if (response.ok) {
-        alert("Login bem-sucedido! Redirecionando para o site.");
+      if (resp.ok) {
+        // Marca autenticado (localStorage se remember=true; senão sessionStorage)
+        setAuth(data?.user, remember);
         navigate("/Site");
       } else {
-        setError(data.message || "Email ou senha inválidos. Tente novamente.");
+        setError(data.error || data.message || `Erro ${resp.status}`);
       }
-    } catch (err) {
+    } catch {
       setError("Não foi possível conectar ao servidor. Verifique a URL.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -49,22 +59,13 @@ const Login = () => {
               <div className="card-body p-3 p-sm-4">
                 <h1 className="h4 text-center mb-4">TripWay</h1>
 
-                {error && (
-                  <div className="alert alert-danger text-center" role="alert">
-                    {error}
-                  </div>
-                )}
+                {error && <div className="alert alert-danger text-center">{error}</div>}
 
                 <form onSubmit={handleSubmit} noValidate>
-                  {/* Email */}
                   <div className="mb-3">
-                    <label htmlFor="email" className="form-label mb-1">
-                      <b>Email</b>
-                    </label>
+                    <label htmlFor="email" className="form-label mb-1"><b>Email</b></label>
                     <div className="input-group">
-                      <span className="input-group-text">
-                        <FaUser />
-                      </span>
+                      <span className="input-group-text"><FaUser /></span>
                       <input
                         id="email"
                         type="email"
@@ -78,15 +79,10 @@ const Login = () => {
                     </div>
                   </div>
 
-                  {/* Senha */}
                   <div className="mb-3">
-                    <label htmlFor="password" className="form-label mb-1">
-                      <b>Senha</b>
-                    </label>
+                    <label htmlFor="password" className="form-label mb-1"><b>Senha</b></label>
                     <div className="input-group">
-                      <span className="input-group-text">
-                        <FaLock />
-                      </span>
+                      <span className="input-group-text"><FaLock /></span>
                       <input
                         id="password"
                         type="password"
@@ -102,18 +98,22 @@ const Login = () => {
 
                   <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-3">
                     <div className="form-check">
-                      <input className="form-check-input" type="checkbox" id="remember" />
-                      <label className="form-check-label" htmlFor="remember">
-                        Lembre de mim
-                      </label>
+                      <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id="remember"
+                        checked={remember}
+                        onChange={(e) => setRemember(e.target.checked)}
+                      />
+                      <label className="form-check-label" htmlFor="remember">Lembre de mim</label>
                     </div>
                     <p className="m-0 small">
                       Não possui conta? <Link to="/SingIn">Click aki</Link>
                     </p>
                   </div>
 
-                  <button type="submit" className="btn btn-primary w-100 btn-lg">
-                    <b>Entrar</b>
+                  <button type="submit" className="btn btn-primary w-100 btn-lg" disabled={loading}>
+                    <b>{loading ? "Entrando..." : "Entrar"}</b>
                   </button>
                 </form>
               </div>
@@ -124,6 +124,4 @@ const Login = () => {
       </div>
     </div>
   );
-};
-
-export default Login;
+}
