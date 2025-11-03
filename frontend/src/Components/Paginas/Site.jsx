@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { FaRoute, FaSearch } from "react-icons/fa";
+import LogoutButton from "../BotaoLogout/LogoutButton.jsx";
+
 import paris from "../../assets/Paris.jpg";
 import roma from "../../assets/Roma.jpg";
 import tokyo from "../../assets/Tokyo.jpg";
@@ -58,7 +60,7 @@ export default function Site() {
                 <Link className="nav-link" to="#">Explorar</Link>
               </li>
               <li className="nav-item">
-                <Link className="nav-link" to="#">Ajustes</Link>
+                <LogoutButton className="nav-link btn btn-link text-decoration-none" />
               </li>
             </ul>
           </div>
